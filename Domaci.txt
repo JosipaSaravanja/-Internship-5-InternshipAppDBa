@@ -1,0 +1,204 @@
+CREATE TABLE Cities(
+	CityId SERIAL PRIMARY KEY,
+	City VARCHAR UNIQUE
+);
+
+CREATE TABLE Members(
+	MemberId SERIAL PRIMARY KEY,
+	Name VARCHAR (20)NOT NULL,
+	Surname VARCHAR (20) NOT NULL,
+	BirthDate TIMESTAMP NOT NULL,
+	Pin VARCHAR (11) NOT NULL,
+	City INT REFERENCES Cities(CityId)
+);
+
+CREATE TABLE Phases(
+	PhaseID SERIAL PRIMARY KEY,
+	Phase VARCHAR (20) UNIQUE
+);
+
+CREATE TABLE Statuses(
+	StatusId SERIAL PRIMARY KEY,
+	Status VARCHAR (20) UNIQUE
+);
+
+
+CREATE TABLE Internships(
+	InternshipId SERIAL PRIMARY KEY,
+	Generation VARCHAR UNIQUE,
+	StartDate TIMESTAMP NOT NULL,
+	EndDate TIMESTAMP NOT NULL,
+	MemberId INT REFERENCES Members(MemberId),
+	PhaseID INT REFERENCES Phases(PhaseID)
+);
+
+CREATE TABLE Courses (
+	CourseId SERIAL PRIMARY KEY,
+	Course VARCHAR UNIQUE
+);
+
+CREATE TABLE IntershipsCourses(
+	InternshipId INT REFERENCES Internships(InternshipId),
+	CourseId INT REFERENCES Courses(CourseId),
+	PRIMARY KEY (InternshipId, CourseId)
+);
+
+CREATE TABLE Interns(
+	InternId SERIAL PRIMARY KEY,
+	Name VARCHAR (20)NOT NULL,
+	Surname VARCHAR (20) NOT NULL,
+	BirthDate TIMESTAMP NOT NULL,
+	Pin VARCHAR (11) NOT NULL,
+	CityId INT REFERENCES Cities(CityId)
+);
+
+CREATE TABLE InternshipsInterns(
+	InternId INT REFERENCES Interns(InternId),
+	InternshipId INT REFERENCES Internships(InternshipId),
+	CourseId INT REFERENCES Courses(CourseId),
+	StatusId INT REFERENCES Statuses(StatusId)
+);
+
+CREATE TABLE InternshipsMembers(
+	MemberId INT REFERENCES Members(MemberId),
+	CourseId INT REFERENCES Courses(CourseId)
+);
+
+CREATE TABLE Works(
+	WorkId SERIAL PRIMARY KEY,
+	InternshipId INT REFERENCES InternshipS(InternshipId),
+	CourseId INT REFERENCES Courses(CourseId),
+	Name VARCHAR,
+	Task VARCHAR (30)
+);
+
+CREATE TABLE Grades(
+	InternId INT REFERENCES Interns(InternId),
+	WorkId INT REFERENCES Works(WorkId),
+	MemberId INT REFERENCES Members(MemberId),
+	Grade INT 
+);
+
+ALTER TABLE InternshipsInterns
+ADD CONSTRAINT UniqueInternInCourse UNIQUE(InternId, InternshipId, CourseId);
+
+ALTER TABLE InternshipsMembers
+ADD CONSTRAINT UniqueMemberCourse UNIQUE(MemberId, CourseId);
+
+ALTER TABLE Internships
+ADD CONSTRAINT UniqueGeneration UNIQUE(Generation);
+
+ALTER TABLE Works
+ADD CONSTRAINT UniqWorkPerCourse UNIQUE(InternshipId, CourseId, Name);
+
+ALTER TABLE Interns 
+ADD CONSTRAINT GrownInterns CHECK(Now()-BirthDate<=INTERVAL '25 years' AND Now()-BirthDate>=INTERVAL '16 years');
+
+ALTER TABLE Members 
+ADD CONSTRAINT GrownMembers CHECK(Now()-BirthDate>=INTERVAL '16 years');
+
+ALTER TABLE Grades 
+ADD CONSTRAINT NormalGrades CHECK(Grade>=1 AND Grade<=5);
+
+INSERT INTO Phases (Phase) VALUES
+('U pripremi'),
+('U tijeku'),
+('Završen');
+INSERT INTO Courses (Course) VALUES
+('Programiranje'),
+('Dizajn'),
+('Multimedija'),
+('Marketing');
+
+INSERT INTO Cities (City) VALUES
+('Moskva'),
+('Split'),
+('Rijeka'),
+('Kaštela');
+
+INSERT INTO Statuses (Status) VALUES
+('pripravnik'),
+('izbačen'),
+('završen internship');
+
+INSERT INTO Members (Name, Surname, BirthDate, Pin, City) VALUES
+('Bruno', 'Brunić', '2002-02-02', '23456789101', '2'),
+('Cvita', 'Cvitić', '2003-03-03', '34567891011', '3'),
+('Duje', 'Dujić', '2004-04-04', '45678910111', '4'),
+('Frane', 'Franić', '2005-05-05', '56789101112', '2'),
+('Goran', 'Goranić', '2001-06-06', '67891011121', '3');
+
+INSERT INTO Interns (Name, Surname, BirthDate, Pin, CityId) VALUES
+('Ivica', 'Ivić', '2003-08-03', '23456725831', '1'),
+('Klara', 'klarić', '2005-07-07', '57575272754', '4'),
+('Joško', 'Jošković', '2002-07-07', '27863757536', '2'),
+('Luce', 'Lucić', '2004-07-07', '27825278985', '3');
+
+INSERT INTO Internships (Generation, StartDate, EndDate, MemberId, PhaseId) VALUES
+('2021/2022', '2021-10-01', '2022-06-10', '11', '2'),
+('2020/2021', '2020-10-01', '2021-06-10', '13', '3');
+
+INSERT INTO InternshipsMembers (MemberId, CourseId) VALUES
+('11', '4'),
+('11', '2'),
+('12', '1'),
+('12', '4'),
+('13', '4'),
+('14', '1'),
+('14', '2');
+
+INSERT INTO IntershipsCourses (InternshipId, CourseId) VALUES
+('7', '4'),
+('8', '2'),
+('7', '1'),
+('8', '4');
+
+INSERT INTO InternshipsInterns(InternId, InternshipId, CourseId, StatusId) VALUES
+('9', '8', '2', '1');
+
+Insert into works (InternshipId, CourseId, Name, Task) values
+('8', '4', 'prvi zadatak', 'ucinite prvi zadatak');
+
+Insert into Grades (InternId, WorkId, MemberId, Grade) values
+('10', '2', '13', '4');
+
+
+/*
+1.ZDK
+SELECT Name, Surname
+FROM Interns 
+WHERE CityId!='2';
+
+2.ZDK
+Select StartDate as Pocetak, EndDate as Kraj from Internships
+Order by StartDate desc;
+
+3.ZDK
+Select DISTINCT a.Name, a.surname from interns a
+INNER Join InternshipsInterns b on a.InternId=b.InternId 
+Where b.PhaseId='2'
+
+4.ZDK
+Select Count(*) from InternshipsInterns intern where (intern.internshipid='7' AND intern.CourseId='1');
+
+5.ZDK
+Select Count(*) from InternshipsInterns intern where (intern.internshipid='4' AND intern.StatusId='2');
+
+6.ZDK
+Update Interns
+SET CityId='1'
+Where LOWER(Surname) Like '%ić';
+
+7.ZDK
+DELETE FROM InternshipsMembers a
+Where ((Select MemberId From Members b where NOW()-b.BirthDate>INTERVAL '25 years')=a.MemberId);
+DELETE FROM Internships a
+Where ((Select MemberId From Members b where NOW()-b.BirthDate>INTERVAL '25 years')=a.MemberId);
+DELETE FROM Members a 
+WHERE NOW()-a.BirthDate>INTERVAL '25 years';
+
+
+8.ZDK
+delete from interns a
+where(Select AVG(Grade) from Grades b where (b.internId=a.internId)<2.5);*/
+
